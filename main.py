@@ -62,13 +62,14 @@ def GetFeatures( data ):
 	# cv = CountVectorizer(inputCol="Filtered", outputCol="features", minDF=2.0)
 
 	# TF-IDF Score
-	tf =  HashingTF(inputCol="Filtered", outputCol="rawFeatures" )
+	hashingTF = HashingTF(inputCol="Filtered", outputCol="rawFeatures", numFeatures=10000)
 	idf = IDF(inputCol="rawFeatures", outputCol="features", minDocFreq=2.0)
 
 	pipeline = Pipeline(stages=[tf, idf])
 
 	dataset = pipeline.fit(data).transform(data)
-
+	dataset.show(5)
+	
 	return dataset
 
 
