@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # Author: Xi Zhang. (xizhang1@cs.stonybrook.edu)
 
-
 import pandas as pd
 import numpy as np
 
@@ -13,6 +12,9 @@ from pyspark import SparkContext
 from pyspark.ml import Pipeline
 from pyspark.ml.feature import RegexTokenizer, StopWordsRemover, CountVectorizer, StringIndexer
 from pyspark.ml.classification import LogisticRegression
+
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+from pyspark.ml.feature import HashingTF, IDF
 
 ###############################################################################
 # Importing data and remove unwanted columns
@@ -29,7 +31,7 @@ def ImportData():
 
 ###############################################################################
 # Stemming and Removing the stopwords in each content
-def ProcessData(data):
+def ProcessData( data ):
 	# Tokenize the content
 	regexTokenizer = RegexTokenizer(inputCol="Descript", outputCol="Words", pattern="\\W")
 	# regexTokenized = regexTokenizer.transform(data).select("Descript", "Words").show(truncate=False)
@@ -38,28 +40,63 @@ def ProcessData(data):
 	remover = StopWordsRemover(inputCol="Words", outputCol="Filtered")
 	# remover.transform( regexTokenized ).select("Words", "Filtered").show(truncate=False)
 
-	# Extract the vocabulary and generate the token counts
-	# minDF: Specifies the minimum number of different documents a term must appear in 
-	# 		 to be included in the vocabulary
-	cv = CountVectorizer(inputCol="Filtered", outputCol="Features", minDF=2.0)
-
 	# Encode a string column of labels to a column of label indices
-	indexer = StringIndexer(inputCol = "Category", outputCol = "Label")
+	indexer = StringIndexer(inputCol = "Category", outputCol = "label")
 
 	# Fit the pipeline and generate the final table
-	pipeline = Pipeline(stages=[regexTokenizer, remover, cv, indexer])
+	pipeline = Pipeline(stages=[regexTokenizer, remover, indexer])
 	
 	dataset = pipeline.fit(data).transform(data)
 	# dataset.show(5)
 
 	return dataset
 
+
+###############################################################################
+# Getting features for model training
+# Both Term Frequency and TF-IDF Score are implemented here
+def GetFeatures( data ):
+	# Term Frequency
+	# minDF: Specifies the minimum number of different documents a term must appear in 
+	# 		 to be included in the vocabulary
+	# cv = CountVectorizer(inputCol="Filtered", outputCol="features", minDF=2.0)
+
+	# TF-IDF Score
+	tf =  HashingTF(inputCol="Filtered", outputCol="rawFeatures" )
+	idf = IDF(inputCol="rawFeatures", outputCol="features", minDocFreq=2.0)
+
+	pipeline = Pipeline(stages=[tf, idf])
+
+	dataset = pipeline.fit(data).transform(data)
+
+	return dataset
+
+
 ###############################################################################
 # 
-def TrainModel(data):
+def TrainModel( dataset ):
+	( trainData, testData ) = dataset.randomSplit([0.7, 0.3], seed = 100)
+	# print trainData.count(), testData.count()
+	# print trainData.printSchema()
+
+	# Create a LogisticRegression instance. This instance is an Estimator.
+	lr = LogisticRegression(maxIter=20, regParam=0.1)
+	model = lr.fit( trainData )
+
+	prediction = model.transform( testData )
+
+	# result = prediction.select("Descript", "Category", "Probability", "label", "prediction") \
+	# .orderBy("Probability", ascending=False)
+
+
+	evaluator = MulticlassClassificationEvaluator(predictionCol="prediction")
+	print evaluator.evaluate( prediction )
+
 
 if __name__ == '__main__':
-	data = ImportData()
-	dataset = ProcessData( data )
+	data = ProcessData( ImportData() )
+	dataset = GetFeatures( data )
+
+	TrainModel( dataset )
 
 	
