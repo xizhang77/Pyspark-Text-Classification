@@ -16,6 +16,9 @@ from pyspark.ml.classification import LogisticRegression
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml.feature import HashingTF, IDF
 
+from pyspark.ml.tuning import ParamGridBuilder, CrossValidator
+
+
 ###############################################################################
 # Importing data and remove unwanted columns
 def ImportData():
@@ -65,7 +68,7 @@ def GetFeatures( data ):
 	hashingTF = HashingTF(inputCol="Filtered", outputCol="rawFeatures", numFeatures=10000)
 	idf = IDF(inputCol="rawFeatures", outputCol="features", minDocFreq=2.0)
 
-	pipeline = Pipeline(stages=[tf, idf])
+	pipeline = Pipeline(stages=[hashingTF, idf])
 
 	dataset = pipeline.fit(data).transform(data)
 	dataset.show(5)
@@ -74,7 +77,7 @@ def GetFeatures( data ):
 
 
 ###############################################################################
-# 
+# Training logistic regression and get the prediction
 def TrainModel( dataset ):
 	( trainData, testData ) = dataset.randomSplit([0.7, 0.3], seed = 100)
 	# print trainData.count(), testData.count()
@@ -82,15 +85,26 @@ def TrainModel( dataset ):
 
 	# Create a LogisticRegression instance. This instance is an Estimator.
 	lr = LogisticRegression(maxIter=20, regParam=0.1)
-	model = lr.fit( trainData )
 
-	prediction = model.transform( testData )
+	# Create ParamGrid for Cross Validation
+	paramGrid = ParamGridBuilder() \
+			.addGrid(lr.regParam, [0.1, 0.3, 0.5]) \
+			.addGrid(lr.elasticNetParam, [0.0, 0.1, 0.2]) \
+			.build()
+	# Create 5-fold CrossValidator
+	crossval = CrossValidator(estimator=lr, \
+					estimatorParamMaps=paramGrid, \
+					evaluator=MulticlassClassificationEvaluator, \
+					numFolds=2)
+	
+	cvModel = crossval.fit( trainData )
+
+	prediction = cvModel.transform( testData )
 
 	# result = prediction.select("Descript", "Category", "Probability", "label", "prediction") \
 	# .orderBy("Probability", ascending=False)
 
-
-	evaluator = MulticlassClassificationEvaluator(predictionCol="prediction")
+	# evaluator = MulticlassClassificationEvaluator(predictionCol="prediction")
 	print evaluator.evaluate( prediction )
 
 
