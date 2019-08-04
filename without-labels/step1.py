@@ -1,20 +1,8 @@
 # -*- coding: utf-8 -*-
 # Author: Xi Zhang. (xizhang1@cs.stonybrook.edu)
 
-from pyspark.sql import SQLContext
-from pyspark import SparkContext
-
-from pyspark.ml import Pipeline
-from pyspark.ml.feature import RegexTokenizer, StopWordsRemover, CountVectorizer, StringIndexer
-from pyspark.ml.classification import LogisticRegression
-
-from pyspark.ml.evaluation import MulticlassClassificationEvaluator
-from pyspark.ml.feature import HashingTF, IDF
-
-
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from os import system
 
 
 ###############################################################################
