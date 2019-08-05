@@ -162,14 +162,14 @@ if __name__ == '__main__':
 	spark = SparkSession.builder.appName(name).getOrCreate()
 
 	data = ProcessData( ImportData() )
-	# df = StemTokens( data )
+	# data = StemTokens( data )
 	df, vocabulary = GetFeatures( data )
 
 
 	cat_df = FilterData( df, 0 )
 	cat_lrmodel = TrainModel( cat_df )
 	cat_lrmodel.write().overwrite().save('model/LogisticRegressionModelForCat')
-	
+
 
 	dog_df = FilterData( df, 1 )
 	dog_lrmodel = TrainModel( dog_df )
