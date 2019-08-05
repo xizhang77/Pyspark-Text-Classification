@@ -84,7 +84,7 @@ def GetFeatures( data ):
 	return df
 
 
-def Prediction( testData, model ):
+def Prediction( testData, model, flag ):
 
 	prediction = model.transform( testData )
 	
@@ -92,8 +92,8 @@ def Prediction( testData, model ):
 
 	# print evaluator.evaluate( prediction )
 
-	tp = prediction[(prediction.label == 1) & (prediction.prediction == 1)].count()
-	fp = prediction[(prediction.label != 1) & (prediction.prediction == 1)].count()
+	tp = prediction[(prediction.label == flag) & (prediction.prediction == flag)].count()
+	fp = prediction[(prediction.label != flag) & (prediction.prediction == flag)].count()
 
 	precision = float(tp) / float(tp + fp)
 
@@ -106,9 +106,11 @@ if __name__ == '__main__':
 	sc = SparkContext()
 	spark = SparkSession.builder.appName(name).getOrCreate()
 
-	model = LogisticRegressionModel.load('model/LogisticRegressionModel')
-
 	data = ProcessData( ImportData() )
 	df = GetFeatures( data )
 
-	Prediction( df, model )
+	catmodel = LogisticRegressionModel.load('model/LogisticRegressionModelForCat')
+	dogmodel = LogisticRegressionModel.load('model/LogisticRegressionModelForDog')
+
+	Prediction( df, catmodel, 0 )
+	Prediction( df, dogmodel, 1 )
