@@ -132,7 +132,8 @@ def FeatureMap( vocabulary, coefficients ):
 
 	return weights
 
-
+###############################################################################
+# Get the top 5 features for each class
 def Ranking():
 	newDF=[	StructField('features', StringType(),True),
 			StructField('weights', DoubleType(),True)]
@@ -150,7 +151,7 @@ if __name__ == '__main__':
 
 	name = 'step4'
 	spark = SparkSession.builder.appName(name).getOrCreate()
-	
+
 	'''
 	data = ProcessData( ImportData() )
 	new_data = data.filter( data.label != 2 )
