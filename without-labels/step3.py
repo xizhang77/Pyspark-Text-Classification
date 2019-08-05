@@ -67,7 +67,7 @@ def ProcessData( data ):
 # Both Term Frequency and TF-IDF Score are implemented here
 def GetFeatures( data ):
 	# Term Frequency
-	cv = CountVectorizer(inputCol="filtered", outputCol="features", minDF=0.05, vocabSize=3000)
+	cv = CountVectorizer(inputCol="filtered", outputCol="features", minDF=0.02, vocabSize=4000)
 	model = cv.fit(data)
 	df = model.transform(data)
 
@@ -95,7 +95,7 @@ def Prediction( testData, model ):
 	tp = results[(prediction.label == 1) & (prediction.prediction == 1)].count()
 	fp = results[(prediction.label != 1) & (prediction.prediction == 1)].count()
 
-	precision = float(tp) / (tp + fp)
+	precision = float(tp) / float(tp + fp)
 
 	print "precision is: ", precision
 
