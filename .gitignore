@@ -8,3 +8,4 @@ without-labels/model/LogisticRegressionModel/data/_SUCCESS
 without-labels/model/LogisticRegressionModel/metadata/_SUCCESS
 *.gz(busy)
 *.tex
+*.pdf
