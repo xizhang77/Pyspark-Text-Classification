@@ -34,6 +34,8 @@ def ImportData():
 
 	return df
 
+###############################################################################
+# Get top 10 creators based on fraction of the cat/dog owners
 def GetCreator( data ):
 	audience = data.groupBy('userid').count()
 
