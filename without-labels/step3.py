@@ -90,10 +90,10 @@ def Prediction( testData, model ):
 	
 	evaluator = BinaryClassificationEvaluator()
 
-	print evaluator.evaluate( prediction )
+	# print evaluator.evaluate( prediction )
 
-	tp = results[(prediction.label == 1) & (prediction.prediction == 1)].count()
-	fp = results[(prediction.label != 1) & (prediction.prediction == 1)].count()
+	tp = prediction[(prediction.label == 1) & (prediction.prediction == 1)].count()
+	fp = prediction[(prediction.label != 1) & (prediction.prediction == 1)].count()
 
 	precision = float(tp) / float(tp + fp)
 
@@ -106,9 +106,9 @@ if __name__ == '__main__':
 	sc = SparkContext()
 	spark = SparkSession.builder.appName(name).getOrCreate()
 
+	model = LogisticRegressionModel.load('model/LogisticRegressionModel')
+
 	data = ProcessData( ImportData() )
 	df = GetFeatures( data )
-
-	model = LogisticRegressionModel.load('model/LogisticRegressionModel')
 
 	Prediction( df, model )
