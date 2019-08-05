@@ -8,11 +8,13 @@ from pyspark.sql import functions as F
 ###############################################################################
 # Importing data 
 def ImportData():
-	spark = SparkSession.builder.appName(name).getOrCreate()
 	df = spark.read.csv('data/animals_comments.csv', header=True)
 	df = df.dropDuplicates()
 
-	df.printSchema()
+	for column in df.columns:
+		df = df.na.drop(subset=[ column ])
+
+	# df.show()
 
 	return df
 
@@ -21,7 +23,7 @@ def ImportData():
 def FilterData( df ):
 	# First filter: owner?
 	# Second filter: cat/dog owner?
-	filter_list1 = ['have', 'had', 'got', 'own', 'get', 'adopt', 'adopted']
+	filter_list1 = ['have', 'had', 'got', 'own', 'get', 'adopt', 'adopted', 'my']
 	filter_list_cat = ['cat', 'kitten']
 	filter_list_dog = ['dog', 'puppy']
 
@@ -49,14 +51,15 @@ def FilterData( df ):
 	# Generate labels for cat/dog owners
 	df_owner = df_owner.withColumn(
 		'label',
-		F.when(F.col('userid').isin(userid_list_cat), 1) \
-		.when(F.col('userid').isin(userid_list_dog), 2) \
-		.otherwise(0)
+		F.when(F.col('userid').isin(userid_list_cat), 0) \
+		.when(F.col('userid').isin(userid_list_dog), 1) \
+		.otherwise(2)
 	)
 
 	columns_to_drop = ['catowner', 'dogowner']
 	df_with_label = df_owner.drop(*columns_to_drop)
 
+	df_with_label.filter( df_with_label.label == 1 ).show()
 
 	df_with_label.printSchema()
 
@@ -66,9 +69,11 @@ def FilterData( df ):
 
 if __name__ == '__main__':
 	name = 'step1'
-	rawdata = ImportData()
-	df = FilterData( rawdata )
+	spark = SparkSession.builder.appName(name).getOrCreate()
 
+	rawdata = ImportData()
+	
+	df = FilterData( rawdata )
 	(
 		df
 		.repartition(1)
