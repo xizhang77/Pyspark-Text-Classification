@@ -166,7 +166,7 @@ if __name__ == '__main__':
 
 	lrmodel = TrainModel( owner_df )
 
-	
+
 	lrmodel.write().overwrite().save('model/LogisticRegressionModel')
 	'''
 	weights = FeatureMap( vocabulary, lrmodel.coefficients )
