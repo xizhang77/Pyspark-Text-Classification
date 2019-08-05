@@ -95,12 +95,10 @@ def StemTokens( df ):
 	
 
 ###############################################################################
-# Getting features for model training
-# Both Term Frequency and TF-IDF Score are implemented here
+# Getting features for model training [Term Frequency ]
 def GetFeatures( data ):
 	# Term Frequency
-	cv = CountVectorizer(inputCol="filtered", outputCol="features", minDF=0.02, vocabSize=4000)
-	model = cv.fit(data)
+	model = CountVectorizer(inputCol="filtered", outputCol="features", minDF=0.02, vocabSize=3000).fit(data)
 	df = model.transform(data)
 
 	# print model.vocabulary
@@ -117,36 +115,44 @@ def GetFeatures( data ):
 
 
 ###############################################################################
-# Getting features for model training
-# Both Term Frequency and TF-IDF Score are implemented here
-def FeatureMap( vocabulary, coefficients ):
-	feature_weight = []
-	for i in range( len(coefficients) ):
-		feature_weight.append( [vocabulary[i], coefficients[i]])
+# Getting the training data for cat and dog owners
+# Cat (flag == 0), Dog (label == 1)
+def FilterData( data, flag ):
+	total = data.count()
+	new_data = data.filter( data.label == flag )
 
-	weights = pd.DataFrame(feature_weight)
+	count = new_data.count()
 
-	print("========= Finish Getting Feature Maps =========")
+	new_df = data.filter( data.label != flag ).sample(False, float(count)/float(total))
+	new_df = new_df.unionAll( new_data )
 
-	return weights
+	new_df = new_df.withColumn(
+		'newlabel',
+		F.when(F.col('label') == flag, flag) \
+		.otherwise( 1 - flag )
+	)
 
+	new_df = new_df.drop('label')
+	new_df = new_df.withColumnRenamed('newlabel', 'label')
 
+	# new_df.show( 10 )
+	return new_df
 
 ###############################################################################
-# Training logistic regression and get the prediction
-def TrainModel( trainData ):
-	# ( trainData, testData ) = df.randomSplit([0.8, 0.2], seed = 100)
-	# print trainData.count(), testData.count()
+# Training logistic regression
+def TrainModel( df ):
+	( trainData, testData ) = df.randomSplit([0.8, 0.2])
 
 	# Create classifier
-	model = LogisticRegression(featuresCol='features', labelCol='label', maxIter=15, regParam=0.2).fit( trainData )	
- 	'''
+	model = LogisticRegression(featuresCol='features', labelCol='label', maxIter=10, regParam=0.2).fit( trainData )	
+ 	
 	prediction = model.transform( testData )
 	evaluator = BinaryClassificationEvaluator()
 
 	print 'The accuacy of classifier is:', evaluator.evaluate( prediction ) 
-	'''
+	
 	return model
+
 
 if __name__ == '__main__':
 
@@ -155,20 +161,19 @@ if __name__ == '__main__':
 	sc = SparkContext()
 	spark = SparkSession.builder.appName(name).getOrCreate()
 
-	data = ImportData()
+	data = ProcessData( ImportData() )
+	# df = StemTokens( data )
+	df, vocabulary = GetFeatures( data )
 
-	owner_data = data.filter( data.label != 2 )
-	owner_df = ProcessData( owner_data )
+
+	cat_df = FilterData( df, 0 )
+	cat_lrmodel = TrainModel( cat_df )
+	cat_lrmodel.write().overwrite().save('model/LogisticRegressionModelForCat')
 	
-	# owner_df = StemTokens( owner_df )
 
-	owner_df, vocabulary = GetFeatures( owner_df )
+	dog_df = FilterData( df, 1 )
+	dog_lrmodel = TrainModel( dog_df )
+	dog_lrmodel.write().overwrite().save('model/LogisticRegressionModelForDog')
 
-	lrmodel = TrainModel( owner_df )
-
-
-	lrmodel.write().overwrite().save('model/LogisticRegressionModel')
-	'''
-	weights = FeatureMap( vocabulary, lrmodel.coefficients )
-	weights.to_csv('data/featureMap.csv', index = None, header = True )
-	'''
+	# dogweights = FeatureMap( vocabulary, dog_lrmodel.coefficients )
+	# dogweights.to_csv('data/dogFeatures.csv', index = None, header = True )
