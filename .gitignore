@@ -1,2 +1,10 @@
 
 *.csv
+without-labels/model/LogisticRegressionModel/metadata/part-00000
+*.png
+*.crc
+without-labels/model/LogisticRegressionModel/data/_SUCCESS
+*.parquet
+without-labels/model/LogisticRegressionModel/metadata/_SUCCESS
+*.gz(busy)
+*.tex
