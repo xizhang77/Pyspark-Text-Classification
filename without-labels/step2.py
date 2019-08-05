@@ -134,18 +134,18 @@ def FeatureMap( vocabulary, coefficients ):
 
 ###############################################################################
 # Training logistic regression and get the prediction
-def TrainModel( df ):
-	( trainData, testData ) = df.randomSplit([0.8, 0.2], seed = 100)
+def TrainModel( trainData ):
+	# ( trainData, testData ) = df.randomSplit([0.8, 0.2], seed = 100)
 	# print trainData.count(), testData.count()
 
 	# Create classifier
 	model = LogisticRegression(featuresCol='features', labelCol='label', maxIter=15, regParam=0.2).fit( trainData )	
- 	
+ 	'''
 	prediction = model.transform( testData )
 	evaluator = BinaryClassificationEvaluator()
 
 	print 'The accuacy of classifier is:', evaluator.evaluate( prediction ) 
-
+	'''
 	return model
 
 if __name__ == '__main__':
@@ -166,10 +166,9 @@ if __name__ == '__main__':
 
 	lrmodel = TrainModel( owner_df )
 
-	'''
 	
 	lrmodel.write().overwrite().save('model/LogisticRegressionModel')
-
+	'''
 	weights = FeatureMap( vocabulary, lrmodel.coefficients )
 	weights.to_csv('data/featureMap.csv', index = None, header = True )
 	'''
