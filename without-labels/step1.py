@@ -59,9 +59,8 @@ def FilterData( df ):
 	columns_to_drop = ['catowner', 'dogowner']
 	df_with_label = df_owner.drop(*columns_to_drop)
 
-	df_with_label.filter( df_with_label.label == 1 ).show()
-
-	df_with_label.printSchema()
+	# df_with_label.filter( df_with_label.label == 1 ).show()
+	# df_with_label.printSchema()
 
 	return df_with_label
 

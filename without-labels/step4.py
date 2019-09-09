@@ -96,7 +96,7 @@ def StemTokens( df ):
 # Getting features for model training [Term Frequency ]
 def GetFeatures( data ):
 	# Term Frequency
-	model = CountVectorizer(inputCol="filtered", outputCol="features", minDF=0.02, vocabSize=3000).fit(data)
+	model = CountVectorizer(inputCol="filtered", outputCol="features", minDF=0.02).fit(data)
 	df = model.transform(data)
 
 	# print model.vocabulary
@@ -113,9 +113,17 @@ def GetFeatures( data ):
 
 ###############################################################################
 # Training logistic regression
-def TrainModel( trainData ):
+def TrainModel( df ):
+	# Create classifier
+	( trainData, testData ) = df.randomSplit([0.8, 0.2], seed = 100 )
+
 	# Create classifier
 	model = LogisticRegression(featuresCol='features', labelCol='label', maxIter=10, regParam=0.2).fit( trainData )	
+ 	
+	prediction = model.transform( testData )
+	evaluator = BinaryClassificationEvaluator()
+
+	print 'The accuacy of classifier is:', evaluator.evaluate( prediction ) 
 	
 	return model
 
@@ -135,12 +143,13 @@ def FeatureMap( vocabulary, coefficients ):
 ###############################################################################
 # Get the top 5 features for each class
 def Ranking():
+	
 	newDF=[	StructField('features', StringType(),True),
 			StructField('weights', DoubleType(),True)]
 	structure = StructType(fields=newDF)
 
 	df = spark.read.csv('data/featuremaps.csv', header=True, schema=structure)
-
+	
 	
 	df.sort(F.col("weights").desc()).show( 5 )
 	df.sort(F.col("weights")).show( 5 )
@@ -152,17 +161,19 @@ if __name__ == '__main__':
 	name = 'step4'
 	spark = SparkSession.builder.appName(name).getOrCreate()
 
-	'''
+	
 	data = ProcessData( ImportData() )
 	new_data = data.filter( data.label != 2 )
-	new_data = StemTokens( new_data )
+
+	new_data.select("comment").show(truncate=False)
+	# new_data = StemTokens( new_data )
 	new_df, vocabulary = GetFeatures( new_data )
 
 	lrmodel = TrainModel( new_df )
 
 	weights = FeatureMap( vocabulary, lrmodel.coefficients )
 	weights.to_csv('data/featuremaps.csv', index = None, header = True )
-	'''
-
-	Ranking()
+	
+	
+	Ranking( )
 
