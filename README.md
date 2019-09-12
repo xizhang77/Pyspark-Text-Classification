@@ -10,12 +10,24 @@ Before building the models, the raw data (1000 positive and 1000 negative TXT fi
 There are only two columns in the dataset:
 * comments: contents in each review
 * category: neg/pos.
-and we could load the data into Spark and begin generating the models.
 
-## Feature Selection
-The PySpark API is similar to Scikit-Learn. After importing the data, three main steps are used to process the data:
+After importing the data, three main steps are used to process the data:
 * RegexTokenizer: tokenize each content
 * StopWordsRemover: remove stop words like "a, the, an, I ..."
 * StringIndexer: encode a string column of labels to a column of label indices
 
 All of those steps can be found in function _ProcessData( df )_
+
+## Feature Selection and Model Training
+
+In this repo, both Term Frequency and TF-IDF Score are implemented to get features. However, for this text classfication problem, we only used TF here (will explain later).
+
+Logisitic Regression is used here for the binary classifition. 
+```
+lr = LogisticRegression(maxIter=10, regParam=0.3, elasticNetParam=0)
+lrmodel = lr.fit( trainData )
+
+prediction = lrmodel.transform( testData )
+evaluator = BinaryClassificationEvaluator(rawPredictionCol="prediction")
+```
+and the accuracy of classifier is: 0.860470992521 (not bad...)
