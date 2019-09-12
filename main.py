@@ -59,8 +59,8 @@ def ProcessData( data ):
 def GetFeatures( data ):
 	'''
 	# TF-IDF Score
-	hashingTF = HashingTF(inputCol="Filtered", outputCol="rawFeatures", numFeatures=10000)
-	idf = IDF(inputCol="rawFeatures", outputCol="features", minDocFreq=4.0)
+	hashingTF = HashingTF(inputCol="Filtered", outputCol="rawFeatures", numFeatures=3000)
+	idf = IDF(inputCol="rawFeatures", outputCol="features", minDocFreq=2.0)
 
 	pipeline = Pipeline(stages=[hashingTF, idf])
 
@@ -70,7 +70,7 @@ def GetFeatures( data ):
 	# Term Frequency
 	# minDF: Specifies the minimum number of different documents a term must appear in 
 	# 		 to be included in the vocabulary
-	model = CountVectorizer(inputCol="Filtered", outputCol="features", minDF=0.02).fit(data)
+	model = CountVectorizer(inputCol="Filtered", outputCol="features", minDF=0.03).fit(data)
 	df = model.transform(data)
 
 	print("========= Finish Getting Features for Training =========")
@@ -97,7 +97,6 @@ def TrainModel( df ):
 	# Therefore, using the basic model to improve the running time
 	'''
 	# Create ParamGrid for Cross Validation
-	
 
 	paramGrid = (ParamGridBuilder()
 		.addGrid(lr.regParam, [0.01, 0.5, 2.0])
@@ -130,7 +129,7 @@ def FeatureMap( vocabulary, coefficients ):
 	print("========= Finish Getting Feature Maps =========")
 
 	print weights.sort_values(by = 'Weights')
-
+	print weights.sort_values(by = 'Weights', ascending=False)
 
 if __name__ == '__main__':
 	data = ProcessData( ImportData() )
