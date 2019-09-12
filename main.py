@@ -13,7 +13,7 @@ from pyspark.ml import Pipeline
 from pyspark.ml.feature import RegexTokenizer, StopWordsRemover, CountVectorizer, StringIndexer
 from pyspark.ml.classification import LogisticRegression
 
-from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.ml.feature import HashingTF, IDF
 
 from pyspark.ml.tuning import ParamGridBuilder, CrossValidator
@@ -24,11 +24,9 @@ from pyspark.ml.tuning import ParamGridBuilder, CrossValidator
 def ImportData():
 	sc =SparkContext()
 	sqlContext = SQLContext( sc )
-	rawData = sqlContext.read.format('com.databricks.spark.csv').options(header='true', inferschema='true').load('data/train.csv')
+	data = sqlContext.read.format('com.databricks.spark.csv').options(header='true', inferschema='true').load('data/comments.csv')
 
-	# rawData.printSchema()
-	drop_list = ['Dates', 'DayOfWeek', 'PdDistrict', 'Resolution', 'Address', 'X', 'Y']
-	data = rawData.select([column for column in rawData.columns if column not in drop_list])
+	# data.printSchema()
 
 	return data
 
@@ -36,8 +34,8 @@ def ImportData():
 # Stemming and Removing the stopwords in each content
 def ProcessData( data ):
 	# Tokenize the content
-	regexTokenizer = RegexTokenizer(inputCol="Descript", outputCol="Words", pattern="\\W")
-	# regexTokenized = regexTokenizer.transform(data).select("Descript", "Words").show(truncate=False)
+	regexTokenizer = RegexTokenizer(inputCol="Comments", outputCol="Words", pattern="\\W")
+	# regexTokenized = regexTokenizer.transform(data).select("Comments", "Words").show(truncate=False)
 
 	# Remove stopwords
 	remover = StopWordsRemover(inputCol="Words", outputCol="Filtered")
@@ -59,59 +57,85 @@ def ProcessData( data ):
 # Getting features for model training
 # Both Term Frequency and TF-IDF Score are implemented here
 def GetFeatures( data ):
-	# Term Frequency
-	# minDF: Specifies the minimum number of different documents a term must appear in 
-	# 		 to be included in the vocabulary
-	# cv = CountVectorizer(inputCol="Filtered", outputCol="features", minDF=2.0)
-
+	'''
 	# TF-IDF Score
 	hashingTF = HashingTF(inputCol="Filtered", outputCol="rawFeatures", numFeatures=10000)
-	idf = IDF(inputCol="rawFeatures", outputCol="features", minDocFreq=2.0)
+	idf = IDF(inputCol="rawFeatures", outputCol="features", minDocFreq=4.0)
 
 	pipeline = Pipeline(stages=[hashingTF, idf])
 
 	dataset = pipeline.fit(data).transform(data)
 	dataset.show(5)
-	
-	return dataset
+	'''
+	# Term Frequency
+	# minDF: Specifies the minimum number of different documents a term must appear in 
+	# 		 to be included in the vocabulary
+	model = CountVectorizer(inputCol="Filtered", outputCol="features", minDF=0.02).fit(data)
+	df = model.transform(data)
+
+	print("========= Finish Getting Features for Training =========")
+
+	return df, model.vocabulary
 
 
 ###############################################################################
 # Training logistic regression and get the prediction
-def TrainModel( dataset ):
-	( trainData, testData ) = dataset.randomSplit([0.8, 0.2], seed = 100)
+def TrainModel( df ):
+	( trainData, testData ) = df.randomSplit([0.8, 0.2], seed=100)
 	# print trainData.count(), testData.count()
 	# print trainData.printSchema()
 
 	# Create a LogisticRegression instance. This instance is an Estimator.
-	lr = LogisticRegression(maxIter=20, regParam=0.1)
-
-	# Create ParamGrid for Cross Validation
-	paramGrid = ParamGridBuilder() \
-			.addGrid(lr.regParam, [0.1, 0.3, 0.5]) \
-			.addGrid(lr.elasticNetParam, [0.0, 0.1, 0.2]) \
-			.build()
-	# Create 5-fold CrossValidator
-	crossval = CrossValidator(estimator=lr, \
-					estimatorParamMaps=paramGrid, \
-					evaluator=MulticlassClassificationEvaluator, \
-					numFolds=2)
+	lr = LogisticRegression(maxIter=10, regParam=0.3, elasticNetParam=0)
 	
-	cvModel = crossval.fit( trainData )
+	lrmodel = lr.fit( trainData )
+	prediction = lrmodel.transform( testData )
 
-	prediction = cvModel.transform( testData )
+	evaluator = BinaryClassificationEvaluator(rawPredictionCol="prediction")
 
-	# result = prediction.select("Descript", "Category", "Probability", "label", "prediction") \
+	# The improvement by Cross Validation is not significant. 
+	# Therefore, using the basic model to improve the running time
+	'''
+	# Create ParamGrid for Cross Validation
+	
+
+	paramGrid = (ParamGridBuilder()
+		.addGrid(lr.regParam, [0.01, 0.5, 2.0])
+		.addGrid(lr.elasticNetParam, [0.0, 0.5, 1.0])
+		.addGrid(lr.maxIter, [1, 5, 10])
+		.build())
+	cv = CrossValidator(estimator=lr, estimatorParamMaps=paramGrid, evaluator=evaluator, numFolds=5)
+
+	cvmodel = cv.fit( trainData )
+
+	prediction = cvmodel.transform( testData )
+	'''
+
+	# result = prediction.select("Category", "Probability", "label", "prediction") \
 	# .orderBy("Probability", ascending=False)
 
-	# evaluator = MulticlassClassificationEvaluator(predictionCol="prediction")
-	print evaluator.evaluate( prediction )
+	print 'The accuacy of classifier is:', evaluator.evaluate( prediction )
+
+	return lrmodel
+
+###############################################################################
+# Getting the feature-weight map
+def FeatureMap( vocabulary, coefficients ):
+	feature_weight = []
+	for i in range( len(coefficients) ):
+		feature_weight.append( [vocabulary[i], coefficients[i]])
+
+	weights = pd.DataFrame(feature_weight, columns =['Words', 'Weights'])
+
+	print("========= Finish Getting Feature Maps =========")
+
+	print weights.sort_values(by = 'Weights')
 
 
 if __name__ == '__main__':
 	data = ProcessData( ImportData() )
-	dataset = GetFeatures( data )
+	df, vocabulary = GetFeatures( data )
 
-	TrainModel( dataset )
+	lrmodel = TrainModel( df )
 
-	
+	FeatureMap( vocabulary, lrmodel.coefficients )
