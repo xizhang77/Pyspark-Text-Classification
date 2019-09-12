@@ -32,7 +32,7 @@ evaluator = BinaryClassificationEvaluator(rawPredictionCol="prediction")
 ```
 and the accuracy of classifier is: 0.860470992521 (not bad...)
 
-## Analysis
+## Result Analysis
 
 Based on the Logistic Regression model, the importance of each feature can be revealed by the coefficient in the model. In order to get the whole vocabulary, the TF model is used instead of TF-IDF (In PySpark, a hashing trick is used to generate TF-IDF score and it's impossible to get the original vocabulary).
 
