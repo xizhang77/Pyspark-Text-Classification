@@ -16,6 +16,12 @@ After importing the data, three main steps are used to process the data:
 * StopWordsRemover: remove stop words like "a, the, an, I ..."
 * StringIndexer: encode a string column of labels to a column of label indices
 
+```
+regexTokenizer = RegexTokenizer(inputCol="Comments", outputCol="Words", pattern="\\W")
+remover = StopWordsRemover(inputCol="Words", outputCol="Filtered")
+indexer = StringIndexer(inputCol = "Category", outputCol = "label")
+```
+
 All of those steps can be found in function _ProcessData( df )_
 
 ## Feature Selection and Model Training
