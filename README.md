@@ -26,9 +26,9 @@ All of those steps can be found in function _ProcessData( df )_
 
 ## Feature Selection and Model Training
 
-In this repo, both _Term Frequency_ and _TF-IDF_ Score are implemented to get features. However, for this text classfication problem, we only used TF here (will explain later).
+In this repo, both _Term Frequency_ and _TF-IDF_ Score are implemented to get features. However, for this text classification problem, we only used TF here (will explain later).
 
-Logisitic Regression is used here for the binary classifition. 
+Logisitic Regression is used here for the binary classification. 
 ```
 lr = LogisticRegression(maxIter=10, regParam=0.3, elasticNetParam=0)
 lrmodel = lr.fit( trainData )
