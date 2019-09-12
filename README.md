@@ -1,4 +1,4 @@
-# Text classfication by PySpark
+# Text classfication using PySpark
 
 In this repo, PySpark is used to solve a binary text classification problem. The whole procedure can be find in [Here](main.py).
 
@@ -10,3 +10,12 @@ Before building the models, the raw data (1000 positive and 1000 negative TXT fi
 There are only two columns in the dataset:
 * comments: contents in each review
 * category: neg/pos.
+and we could load the data into Spark and begin generating the models.
+
+## Feature Selection
+The PySpark API is similar to Scikit-Learn. After importing the data, three main steps are used to process the data:
+* RegexTokenizer: tokenize each content
+* StopWordsRemover: remove stop words like "a, the, an, I ..."
+* StringIndexer: encode a string column of labels to a column of label indices
+
+All of those steps can be found in function _ProcessData( df )_
