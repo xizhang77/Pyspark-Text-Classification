@@ -1,11 +1,11 @@
 # Text classfication using PySpark
 
-In this repo, PySpark is used to solve a binary text classification problem. The whole procedure can be find in [Here](main.py).
+In this repo, PySpark is used to solve a binary text classification problem. The whole procedure can be find in [main.py](main.py).
 
 ## Data 
-Our task here is to general a binary classifier for IMDB movie reviews. The data was collected by Cornell in 2002 and can be downloaded from [Here](http://www.cs.cornell.edu/people/pabo/movie-review-data/).
+Our task here is to general a binary classifier for IMDB movie reviews. The data was collected by Cornell in 2002 and can be downloaded from [Movie Review Data](http://www.cs.cornell.edu/people/pabo/movie-review-data/).
 
-Before building the models, the raw data (1000 positive and 1000 negative TXT files) is stemmed and integrated into a single CSV file. The code can be find [Here](index-data.py). 
+Before building the models, the raw data (1000 positive and 1000 negative TXT files) is stemmed and integrated into a single CSV file. The code can be find [index-data.py](index-data.py). 
 
 There are only two columns in the dataset:
 * comments: contents in each review
