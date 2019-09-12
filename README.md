@@ -31,3 +31,18 @@ prediction = lrmodel.transform( testData )
 evaluator = BinaryClassificationEvaluator(rawPredictionCol="prediction")
 ```
 and the accuracy of classifier is: 0.860470992521 (not bad...)
+
+## Analysis
+
+Based on the Logistic Regression model, the importance of each feature can be revealed by the coefficient in the model. In order to get the whole vocabulary, the TF model is used instead of TF-IDF (In PySpark, a hashing trick is used to generate TF-IDF score and it's impossible to get the original vocabulary).
+
+Therefore, by ranking the coefficients from the classifier, we can get the important features (keywords) in each class. The top 10 features for each class are shown below.
+
+
+<p align="center">
+<img src="./images/neg_feature.png" height="300">
+<img src="./images/pos_feature.png" height="300">
+</p>
+<p align="center">
+<em>Left: top 10 keywords for negative class; Right: top 10 keywords for positive class </em>
+</p>
